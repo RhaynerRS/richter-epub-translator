@@ -9,14 +9,14 @@
   IgnorableNamespaces="uap rescap systemai">
 
   <Identity
-    Name="782aca8b-8964-45a7-8eb8-5a6468e8fdcc"
+    Name="2f702208-d91a-48c2-b164-98cf30f66931"
     Publisher="CN=Rhayner"
     Version="1.0.0.0" />
 
-  <mp:PhoneIdentity PhoneProductId="782aca8b-8964-45a7-8eb8-5a6468e8fdcc" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="2f702208-d91a-48c2-b164-98cf30f66931" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>RichterUi</DisplayName>
+    <DisplayName>Lexicast.UI.Tests</DisplayName>
     <PublisherDisplayName>Rhayner</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -35,8 +35,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="RichterUi"
-        Description="RichterUi"
+        DisplayName="Lexicast.UI.Tests"
+        Description="Lexicast.UI.Tests"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">

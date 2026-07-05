@@ -12,20 +12,25 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Graphics;
+using Lexicast.UI.Pages;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
 
-namespace RichterUi
+namespace Lexicast.UI
 {
     /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
+    /// Hosts the navigation Frame used to move between the upload and progress screens.
     /// </summary>
     public sealed partial class MainWindow : Window
     {
         public MainWindow()
         {
             InitializeComponent();
+            Title = "Lexicast EPUB Translator";
+            AppWindow.Resize(new SizeInt32(960, 720));
+            RootFrame.Navigate(typeof(UploadPage));
         }
     }
 }

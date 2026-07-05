@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RichterUi.Tests
+namespace Lexicast.UI.Tests
 {
     [TestClass]
     public partial class UnitTest1

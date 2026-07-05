@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "EPUB Translator API",
+    "description": "Endpoints for submitting and tracking EPUB translation jobs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "job_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Create translation",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": []
+            },
+            {
+              "key": "target_language",
+              "type": "text",
+              "value": "pt-BR"
+            },
+            {
+              "key": "concurrency",
+              "type": "text",
+              "value": "1"
+            },
+            {
+              "key": "user_prompt",
+              "type": "text",
+              "value": "",
+              "disabled": true
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/translations",
+          "host": ["{{base_url}}"],
+          "path": ["translations"]
+        },
+        "description": "Uploads an .epub file and starts a translation job. Response contains job_id, used by the other requests."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 202) {",
+              "    const body = pm.response.json();",
+              "    pm.collectionVariables.set('job_id', body.job_id);",
+              "}",
+              "pm.test('Status code is 202', function () {",
+              "    pm.response.to.have.status(202);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Get translation status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/translations/{{job_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["translations", "{{job_id}}"]
+        },
+        "description": "Returns job_id, status (queued|running|completed|failed), progress, error and warning."
+      },
+      "response": []
+    },
+    {
+      "name": "Stream translation events (SSE)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/event-stream"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/translations/{{job_id}}/events",
+          "host": ["{{base_url}}"],
+          "path": ["translations", "{{job_id}}", "events"]
+        },
+        "description": "Server-Sent Events stream with job status updates every second until completed or failed. Use Postman's 'Send' (not code generation) to watch the stream in the response pane."
+      },
+      "response": []
+    },
+    {
+      "name": "Download translated EPUB",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/translations/{{job_id}}/download",
+          "host": ["{{base_url}}"],
+          "path": ["translations", "{{job_id}}", "download"]
+        },
+        "description": "Downloads the translated .epub once the job status is 'completed'. Returns 409 if not completed yet."
+      },
+      "response": []
+    }
+  ]
+}

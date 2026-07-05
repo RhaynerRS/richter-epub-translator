@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="Lexicast.UI.Pages.ProgressPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Lexicast.UI.Pages"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <StackPanel Padding="40,32" Spacing="20" MaxWidth="640" HorizontalAlignment="Stretch">
+
+        <StackPanel Spacing="4">
+            <TextBlock Text="Traduzindo" Style="{StaticResource TitleLargeTextBlockStyle}" />
+            <TextBlock x:Name="FileNameText" Style="{StaticResource BodyTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+
+        <StackPanel Spacing="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock x:Name="StatusText" Text="Status: enviando..." Style="{StaticResource BodyStrongTextBlockStyle}" />
+                <TextBlock Grid.Column="1" x:Name="ProgressPercentText" Text="0%" />
+            </Grid>
+            <ProgressBar x:Name="JobProgressBar" Minimum="0" Maximum="100" Value="0" />
+        </StackPanel>
+
+        <InfoBar x:Name="WarningInfoBar" Severity="Warning" IsOpen="False" Title="Aviso" />
+        <InfoBar x:Name="ErrorInfoBar" Severity="Error" IsOpen="False" Title="A tradução falhou" />
+
+        <StackPanel Orientation="Horizontal" Spacing="12">
+            <Button x:Name="DownloadButton"
+                    Content="Baixar tradução"
+                    Style="{StaticResource AccentButtonStyle}"
+                    IsEnabled="False"
+                    Click="DownloadButton_Click" />
+            <Button x:Name="NewTranslationButton"
+                    Content="Nova tradução"
+                    Click="NewTranslationButton_Click" />
+            <ProgressRing x:Name="DownloadProgressRing" Width="24" Height="24" IsActive="False" />
+        </StackPanel>
+
+    </StackPanel>
+</Page>

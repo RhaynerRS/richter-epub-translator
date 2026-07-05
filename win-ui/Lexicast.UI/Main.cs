@@ -6,7 +6,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.ApplicationModel.DynamicDependency;
 
-namespace RichterUi
+namespace Lexicast.UI
 {
     /// <summary>
     /// Replaces the XAML-generated Main (disabled via DISABLE_XAML_GENERATED_MAIN) so the app

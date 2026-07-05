@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from .config import settings
 from .jobs import job_manager
 
-app = FastAPI(title="EPUB Translator API")
+app = FastAPI(title="Lexicast API")
 
 STORAGE_DIR = Path(settings.storage_dir)
 UPLOAD_DIR = STORAGE_DIR / "uploads"

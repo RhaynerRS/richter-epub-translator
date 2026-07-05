@@ -1,9 +1,9 @@
 {
   "profiles": {
-    "RichterUi (Package)": {
+    "Lexicast.UI.Tests (Package)": {
       "commandName": "MsixPackage"
     },
-    "RichterUi (Unpackaged)": {
+    "Lexicast.UI.Tests (Unpackaged)": {
       "commandName": "Project"
     }
   }

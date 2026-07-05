@@ -4,13 +4,13 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="RichterUi.Tests/RichterUi.Tests.csproj" Id="2aff4030-ed7b-472c-9570-750bcc0b4ee8">
+  <Project Path="Lexicast.UI.Tests/Lexicast.UI.Tests.csproj" Id="2aff4030-ed7b-472c-9570-750bcc0b4ee8">
     <Platform Solution="*|ARM64" Project="ARM64" />
     <Platform Solution="*|x64" Project="x64" />
     <Platform Solution="*|x86" Project="x86" />
     <Deploy />
   </Project>
-  <Project Path="RichterUi/RichterUi.csproj" Id="b7fd7bc4-c930-4430-92bf-52cd47c7547e">
+  <Project Path="Lexicast.UI/Lexicast.UI.csproj" Id="b7fd7bc4-c930-4430-92bf-52cd47c7547e">
     <Platform Solution="*|ARM64" Project="ARM64" />
     <Platform Solution="*|x64" Project="x64" />
     <Platform Solution="*|x86" Project="x86" />
