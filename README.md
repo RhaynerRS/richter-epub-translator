@@ -3,7 +3,7 @@
   <p><strong>Self-hosted EPUB translation, powered by a local LLM</strong></p>
   <p>
     A tiny FastAPI wrapper around <a href="https://github.com/oomol-lab/epub-translator">epub-translator</a><br/>
-    plus a WinUI 3 desktop client, fully dockerized alongside Ollama running Qwen3 locally.
+    plus a cross-platform Avalonia desktop client, fully dockerized alongside Ollama running Qwen3 locally.
   </p>
 </div>
 
@@ -12,7 +12,7 @@
 ## System Requirements
 
 - Docker and Docker Compose
-- (WinUI client) Windows + [.NET 9 SDK](https://dotnet.microsoft.com/download) / Windows App SDK
+- (Desktop client) [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) — runs on Windows, Linux and macOS via Avalonia
 - A GPU is recommended for Ollama (the bundled compose targets AMD/ROCm)
 
 ## Getting Started
@@ -47,13 +47,11 @@ export OLLAMA_BASE_URL=http://localhost:11434/v1
 uvicorn app.main:app --reload
 ```
 
-### Running the WinUI client
-
-Open `win-ui/Lexicast.UI.slnx` in Visual Studio and run the `Lexicast.UI` project, or:
+### Running the desktop client
 
 ```bash
-cd win-ui
-dotnet run --project Lexicast.UI
+cd LexicastUi
+dotnet run
 ```
 
 Point the app at the API URL (default `http://localhost:8000`) on the upload screen.
@@ -65,15 +63,21 @@ docker build -f python-api/dockerfile -t lexicast-api .
 ```
 
 ```bash
-dotnet build win-ui/Lexicast.UI.slnx
+dotnet build LexicastUi/LexicastUi.csproj
 ```
 
 ## Architecture
 
+<div align="center" style="margin-bottom:50px">
+  <br/>
+  <img src="assets/diagram.svg" alt="architecture diagram" />
+  <br/>
+</div>
+
 | Component | Type | Responsibility |
 |-----------|------|----------------|
 | `python-api` | FastAPI service | Accepts EPUB uploads, runs `epub-translator` jobs against Ollama, exposes progress + download |
-| `win-ui` | WinUI 3 desktop app | Pick an `.epub`, configure target language/prompt, track progress, download the translated file |
+| `LexicastUi` | Avalonia desktop app (.NET 10) | Pick an `.epub`, configure target language/prompt, track progress, download the translated file — runs on Windows, Linux and macOS |
 | `ollama` | Ollama container | Serves the local LLM (Qwen3 by default) via an OpenAI-compatible endpoint |
 
 Translation jobs run in-process on a thread pool (`JOB_WORKERS`) inside the API container — there's no external queue. Job state (status, progress, last warning) is kept in memory and polled/streamed by the client.
@@ -128,5 +132,5 @@ JOB_WORKERS=4
 | API | FastAPI + Uvicorn |
 | Translation engine | [epub-translator](https://github.com/oomol-lab/epub-translator) |
 | LLM runtime | Ollama (Qwen3 by default, ROCm image) |
-| Desktop client | WinUI 3 (.NET) |
+| Desktop client | Avalonia UI (.NET 10, cross-platform) |
 | Packaging | Docker / Docker Compose |
