@@ -7,8 +7,10 @@ from enum import Enum
 from typing import Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 
+from .config import settings
 from .jobs import TERMINAL_STATUSES, job_manager
 
 SSE_HEARTBEAT_SECONDS = 15
@@ -21,6 +23,15 @@ class SubmitKindParam(str, Enum):
 
 
 app = FastAPI(title="Lexicast API")
+
+if settings.frontend_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.frontend_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.on_event("startup")

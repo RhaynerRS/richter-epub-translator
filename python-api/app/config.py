@@ -13,6 +13,7 @@ class Settings:
     token_encoding: str
     storage_dir: str
     job_workers: int
+    frontend_origins: list[str]
 
 
 @dataclass(frozen=True)
@@ -107,6 +108,7 @@ def _load() -> Settings:
         token_encoding=os.environ.get("TOKEN_ENCODING", "cl100k_base"),
         storage_dir=os.environ.get("STORAGE_DIR", "./data"),
         job_workers=int(os.environ.get("JOB_WORKERS", "4")),
+        frontend_origins=[o.strip() for o in os.environ.get("FRONTEND_ORIGIN", "").split(",") if o.strip()],
     )
 
 
