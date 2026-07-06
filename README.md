@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="./assets/icon.svg" width="100" alt="Lexicast" />
   <h1>Lexicast</h1>
   <p><strong>Self-hosted EPUB translation, powered by a local LLM</strong></p>
   <p>
