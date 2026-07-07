@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "EPUB Translator API",
-    "description": "Endpoints for submitting and tracking EPUB translation jobs.",
+    "description": "Endpoints for submitting and tracking EPUB translation jobs, social login (Google/GitHub OAuth), and Stripe billing.\n\nAuth is opt-in via AUTH_ENABLED: when false (default), every endpoint below works without a token and jobs are unowned. When true, /translations* endpoints accept an optional Bearer token (enable the disabled Authorization header on each request) and jobs become scoped to the caller.\n\nPayment is opt-in via PAYMENT_ENABLED (requires AUTH_ENABLED=true): when true, POST /translations returns a Stripe checkout_url instead of starting the job immediately; the job only starts once the /billing/webhook receives checkout.session.completed.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -14,147 +14,413 @@
       "key": "job_id",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT returned by /auth/google/callback or /auth/github/callback. Only relevant when AUTH_ENABLED=true."
     }
   ],
   "item": [
     {
-      "name": "Create translation",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "formdata",
-          "formdata": [
-            {
-              "key": "file",
-              "type": "file",
-              "src": []
-            },
-            {
-              "key": "target_language",
-              "type": "text",
-              "value": "pt-BR"
-            },
-            {
-              "key": "concurrency",
-              "type": "text",
-              "value": "1"
-            },
-            {
-              "key": "user_prompt",
-              "type": "text",
-              "value": "",
-              "disabled": true
-            },
-            {
-              "key": "submit_kind",
-              "type": "text",
-              "value": "APPEND_BLOCK",
-              "description": "One of REPLACE, APPEND_TEXT, APPEND_BLOCK. Defaults to APPEND_BLOCK if omitted.",
-              "disabled": true
-            }
-          ]
-        },
-        "url": {
-          "raw": "{{base_url}}/translations",
-          "host": ["{{base_url}}"],
-          "path": ["translations"]
-        },
-        "description": "Uploads an .epub file and starts a translation job. Response contains job_id, used by the other requests. submit_kind controls how translated text is merged into the original node: REPLACE, APPEND_TEXT, or APPEND_BLOCK."
-      },
-      "event": [
+      "name": "Auth",
+      "item": [
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "if (pm.response.code === 202) {",
-              "    const body = pm.response.json();",
-              "    pm.collectionVariables.set('job_id', body.job_id);",
-              "}",
-              "pm.test('Status code is 202', function () {",
-              "    pm.response.to.have.status(202);",
-              "});"
-            ]
-          }
+          "name": "Google login (redirect)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "google", "login"]
+            },
+            "description": "Redirects (302) to Google's OAuth consent screen with a signed CSRF state param. Open this URL directly in a browser rather than 'Send' in Postman — the flow needs an actual Google sign-in UI and ends by redirecting back to GOOGLE_REDIRECT_URI (google/callback) with ?code=&state=."
+          },
+          "response": []
+        },
+        {
+          "name": "Google callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/google/callback?code=&state=",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "google", "callback"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "",
+                  "description": "Authorization code Google appends to the redirect URI after consent"
+                },
+                {
+                  "key": "state",
+                  "value": "",
+                  "description": "Signed state Google echoes back verbatim (CSRF check, TTL = OAUTH_STATE_TTL_SECONDS)"
+                }
+              ]
+            },
+            "description": "Called by Google's redirect after the user consents (not meant to be invoked manually with fake values — code/state must come from a live Google login flow). Exchanges the code, upserts the user, and returns {access_token, token_type}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', body.access_token);",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "GitHub login (redirect)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/github/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "github", "login"]
+            },
+            "description": "Redirects (302) to GitHub's OAuth consent screen with a signed CSRF state param. Open this URL directly in a browser rather than 'Send' in Postman — the flow needs an actual GitHub sign-in UI and ends by redirecting back to GITHUB_REDIRECT_URI (github/callback) with ?code=&state=."
+          },
+          "response": []
+        },
+        {
+          "name": "GitHub callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/github/callback?code=&state=",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "github", "callback"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "",
+                  "description": "Authorization code GitHub appends to the redirect URI after consent"
+                },
+                {
+                  "key": "state",
+                  "value": "",
+                  "description": "Signed state GitHub echoes back verbatim (CSRF check, TTL = OAUTH_STATE_TTL_SECONDS)"
+                }
+              ]
+            },
+            "description": "Called by GitHub's redirect after the user consents (not meant to be invoked manually with fake values — code/state must come from a live GitHub login flow). Exchanges the code, upserts the user, and returns {access_token, token_type}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', body.access_token);",
+                  "}",
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Current user",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "disabled": true,
+                "description": "Enable and set access_token when AUTH_ENABLED=true"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Returns {user: {id, provider, email, name}} for the token's owner, or {user: null} if unauthenticated or AUTH_ENABLED=false."
+          },
+          "response": []
         }
-      ],
-      "response": []
+      ]
     },
     {
-      "name": "List translations",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/translations",
-          "host": ["{{base_url}}"],
-          "path": ["translations"]
+      "name": "Translations",
+      "item": [
+        {
+          "name": "Create translation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "disabled": true,
+                "description": "Enable and set access_token when AUTH_ENABLED=true, to own this job"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "target_language",
+                  "type": "text",
+                  "value": "pt-BR"
+                },
+                {
+                  "key": "concurrency",
+                  "type": "text",
+                  "value": "1"
+                },
+                {
+                  "key": "user_prompt",
+                  "type": "text",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "submit_kind",
+                  "type": "text",
+                  "value": "APPEND_BLOCK",
+                  "description": "One of REPLACE, APPEND_TEXT, APPEND_BLOCK. Defaults to APPEND_BLOCK if omitted.",
+                  "disabled": true
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/translations",
+              "host": ["{{base_url}}"],
+              "path": ["translations"]
+            },
+            "description": "Uploads an .epub file and starts a translation job (or, if PAYMENT_ENABLED=true, creates a Stripe Checkout Session instead of starting it). Response (202) is either:\n- Payment disabled: {job_id, status} — status is 'queued', job runs immediately.\n- Payment enabled: {job_id, status: 'awaiting_payment', checkout_url} — the job only starts after Stripe confirms payment via POST /billing/webhook. Open checkout_url in a browser to pay."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('job_id', body.job_id);",
+                  "}",
+                  "pm.test('Status code is 202', function () {",
+                  "    pm.response.to.have.status(202);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
         },
-        "description": "Returns a list of all known jobs (job_id, source_filename, status, progress, error, warning), in the order they were created."
-      },
-      "response": []
+        {
+          "name": "List translations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "disabled": true,
+                "description": "Enable and set access_token when AUTH_ENABLED=true, to list only your own jobs"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/translations",
+              "host": ["{{base_url}}"],
+              "path": ["translations"]
+            },
+            "description": "Returns a list of jobs (all of them if unauthenticated/AUTH_ENABLED=false, otherwise only jobs owned by the caller), in the order they were created. Each item is the same shape as GET /translations/{job_id}."
+          },
+          "response": []
+        },
+        {
+          "name": "Get translation status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "disabled": true,
+                "description": "Enable and set access_token when AUTH_ENABLED=true, if the job has an owner"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/translations/{{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["translations", "{{job_id}}"]
+            },
+            "description": "Returns: job_id, source_filename, target_language, submit_kind, concurrency, created_at, status (queued|awaiting_payment|running|cancelling|completed|failed|cancelled), progress, error, warning, owner_user_id, user_prompt, estimated_tokens, price_cents, currency, stripe_payment_status. Returns 404 (not 403) if the job belongs to a different user, so job existence isn't leaked."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel translation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "disabled": true,
+                "description": "Enable and set access_token when AUTH_ENABLED=true, if the job has an owner"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/translations/{{job_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["translations", "{{job_id}}", "cancel"]
+            },
+            "description": "Requests cancellation of a queued or running job and discards any partial output. Returns the job with status 'cancelled' (if it hadn't started yet) or 'cancelling' (if it was already running, until the background worker notices and finalizes it as 'cancelled'). Returns 409 if the job already completed, failed, or was cancelled; 404 if it belongs to another user."
+          },
+          "response": []
+        },
+        {
+          "name": "Stream translation events (SSE)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "text/event-stream"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "disabled": true,
+                "description": "Enable and set access_token when AUTH_ENABLED=true, if the job has an owner"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/translations/{{job_id}}/events",
+              "host": ["{{base_url}}"],
+              "path": ["translations", "{{job_id}}", "events"]
+            },
+            "description": "Server-Sent Events stream with job status updates (same shape as GET /translations/{job_id}), plus a ': keep-alive' comment every 15s, until the job reaches a terminal status (completed/failed/cancelled). Use Postman's 'Send' (not code generation) to watch the stream in the response pane."
+          },
+          "response": []
+        },
+        {
+          "name": "Download translated EPUB",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "disabled": true,
+                "description": "Enable and set access_token when AUTH_ENABLED=true, if the job has an owner"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/translations/{{job_id}}/download",
+              "host": ["{{base_url}}"],
+              "path": ["translations", "{{job_id}}", "download"]
+            },
+            "description": "Downloads the translated .epub once the job status is 'completed'. Returns 409 if not completed yet, 404 if the job belongs to another user."
+          },
+          "response": []
+        }
+      ]
     },
     {
-      "name": "Get translation status",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/translations/{{job_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["translations", "{{job_id}}"]
+      "name": "Billing",
+      "item": [
+        {
+          "name": "Checkout success (Stripe redirect target)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/billing/success?job_id={{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["billing", "success"],
+              "query": [
+                {
+                  "key": "job_id",
+                  "value": "{{job_id}}"
+                }
+              ]
+            },
+            "description": "Static HTML confirmation page. This is the Stripe Checkout success_url — Stripe redirects the payer's browser here after payment; not meant to be called directly except to preview the page."
+          },
+          "response": []
         },
-        "description": "Returns job_id, status (queued|running|cancelling|completed|failed|cancelled), progress, error and warning."
-      },
-      "response": []
-    },
-    {
-      "name": "Cancel translation",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/translations/{{job_id}}/cancel",
-          "host": ["{{base_url}}"],
-          "path": ["translations", "{{job_id}}", "cancel"]
+        {
+          "name": "Checkout cancel (Stripe redirect target)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/billing/cancel?job_id={{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["billing", "cancel"],
+              "query": [
+                {
+                  "key": "job_id",
+                  "value": "{{job_id}}"
+                }
+              ]
+            },
+            "description": "Static HTML cancellation page. This is the Stripe Checkout cancel_url — Stripe redirects the payer's browser here if they abandon checkout; not meant to be called directly except to preview the page."
+          },
+          "response": []
         },
-        "description": "Requests cancellation of a queued or running job and discards any partial output. Returns the job with status 'cancelled' (if it hadn't started yet) or 'cancelling' (if it was already running, until the background worker notices and finalizes it as 'cancelled'). Returns 409 if the job already completed, failed, or was cancelled."
-      },
-      "response": []
-    },
-    {
-      "name": "Stream translation events (SSE)",
-      "request": {
-        "method": "GET",
-        "header": [
-          {
-            "key": "Accept",
-            "value": "text/event-stream"
-          }
-        ],
-        "url": {
-          "raw": "{{base_url}}/translations/{{job_id}}/events",
-          "host": ["{{base_url}}"],
-          "path": ["translations", "{{job_id}}", "events"]
-        },
-        "description": "Server-Sent Events stream with job status updates every second until completed or failed. Use Postman's 'Send' (not code generation) to watch the stream in the response pane."
-      },
-      "response": []
-    },
-    {
-      "name": "Download translated EPUB",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{base_url}}/translations/{{job_id}}/download",
-          "host": ["{{base_url}}"],
-          "path": ["translations", "{{job_id}}", "download"]
-        },
-        "description": "Downloads the translated .epub once the job status is 'completed'. Returns 409 if not completed yet."
-      },
-      "response": []
+        {
+          "name": "Stripe webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Stripe-Signature",
+                "value": "",
+                "description": "Required. HMAC signature over the raw body, verified against STRIPE_WEBHOOK_SECRET — Postman can't forge this. Use the Stripe CLI instead: `stripe listen --forward-to {{base_url}}/billing/webhook` then `stripe trigger checkout.session.completed`."
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"checkout.session.completed\",\n  \"data\": {\n    \"object\": {\n      \"metadata\": {\n        \"job_id\": \"{{job_id}}\"\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/billing/webhook",
+              "host": ["{{base_url}}"],
+              "path": ["billing", "webhook"]
+            },
+            "description": "Stripe webhook endpoint. Reads the raw request body and verifies Stripe-Signature against STRIPE_WEBHOOK_SECRET — a request without a valid signature (like one sent straight from Postman) returns 400. On checkout.session.completed, marks the job paid and submits it for translation. Only handles this one event type; any other event, or one whose job_id doesn't resolve or isn't awaiting_payment, returns 200 {status: 'ignored'} (never 500 — Stripe retries indefinitely on failure). Test via the Stripe CLI, not Postman."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

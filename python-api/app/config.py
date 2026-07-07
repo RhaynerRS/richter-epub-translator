@@ -15,6 +15,8 @@ class Settings:
     job_workers: int
     frontend_origins: list[str]
     auth_enabled: bool
+    google_auth_enabled: bool
+    github_auth_enabled: bool
     payment_enabled: bool
     google_client_id: str | None
     google_client_secret: str | None
@@ -127,22 +129,30 @@ def _load() -> Settings:
         raise RuntimeError(f"Unsupported LLM_PROVIDER: {provider_name!r} (expected one of: {supported})")
     provider_config = adapter.resolve()
 
-    auth_enabled = _parse_bool(os.environ.get("AUTH_ENABLED", "false"))
+    google_auth_enabled = _parse_bool(os.environ.get("GOOGLE_AUTH_ENABLED", "false"))
+    github_auth_enabled = _parse_bool(os.environ.get("GITHUB_AUTH_ENABLED", "false"))
+    # Master switch: on if login via either provider is enabled. Gates JWT
+    # verification (get_current_user) and the JWT_SECRET requirement below —
+    # it's not its own env var anymore, just the union of the two providers.
+    auth_enabled = google_auth_enabled or github_auth_enabled
+
     payment_enabled = _parse_bool(os.environ.get("PAYMENT_ENABLED", "false"))
     if payment_enabled and not auth_enabled:
-        raise RuntimeError("PAYMENT_ENABLED=true requires AUTH_ENABLED=true")
+        raise RuntimeError("PAYMENT_ENABLED=true requires GOOGLE_AUTH_ENABLED=true or GITHUB_AUTH_ENABLED=true")
 
     google_client_id = google_client_secret = google_redirect_uri = None
-    github_client_id = github_client_secret = github_redirect_uri = None
-    jwt_secret = None
-    if auth_enabled:
+    if google_auth_enabled:
         google_client_id = _require_env("GOOGLE_CLIENT_ID")
         google_client_secret = _require_env("GOOGLE_CLIENT_SECRET")
         google_redirect_uri = _require_env("GOOGLE_REDIRECT_URI")
+
+    github_client_id = github_client_secret = github_redirect_uri = None
+    if github_auth_enabled:
         github_client_id = _require_env("GITHUB_CLIENT_ID")
         github_client_secret = _require_env("GITHUB_CLIENT_SECRET")
         github_redirect_uri = _require_env("GITHUB_REDIRECT_URI")
-        jwt_secret = _require_env("JWT_SECRET")
+
+    jwt_secret = _require_env("JWT_SECRET") if auth_enabled else None
 
     stripe_secret_key = stripe_webhook_secret = None
     if payment_enabled:
@@ -161,6 +171,8 @@ def _load() -> Settings:
         job_workers=int(os.environ.get("JOB_WORKERS", "4")),
         frontend_origins=[o.strip() for o in os.environ.get("FRONTEND_ORIGIN", "").split(",") if o.strip()],
         auth_enabled=auth_enabled,
+        google_auth_enabled=google_auth_enabled,
+        github_auth_enabled=github_auth_enabled,
         payment_enabled=payment_enabled,
         google_client_id=google_client_id,
         google_client_secret=google_client_secret,

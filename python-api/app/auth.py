@@ -54,6 +54,8 @@ def _issue_jwt(user: User) -> dict:
 
 @router.get("/google/login")
 async def google_login():
+    if not settings.google_auth_enabled:
+        raise HTTPException(404, "Google login is not enabled")
     state = _make_state("google")
     params = {
         "client_id": settings.google_client_id,
@@ -69,6 +71,8 @@ async def google_login():
 
 @router.get("/google/callback")
 async def google_callback(code: str, state: str):
+    if not settings.google_auth_enabled:
+        raise HTTPException(404, "Google login is not enabled")
     _verify_state(state, "google")
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(
@@ -103,6 +107,8 @@ async def google_callback(code: str, state: str):
 
 @router.get("/github/login")
 async def github_login():
+    if not settings.github_auth_enabled:
+        raise HTTPException(404, "GitHub login is not enabled")
     state = _make_state("github")
     params = {
         "client_id": settings.github_client_id,
@@ -115,6 +121,8 @@ async def github_login():
 
 @router.get("/github/callback")
 async def github_callback(code: str, state: str):
+    if not settings.github_auth_enabled:
+        raise HTTPException(404, "GitHub login is not enabled")
     _verify_state(state, "github")
     async with httpx.AsyncClient() as client:
         token_resp = await client.post(

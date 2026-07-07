@@ -33,24 +33,26 @@ services:
       # nenhuma origem cross-origin e liberada.
       # - FRONTEND_ORIGIN=http://localhost:5173
 
-      # --- Login social (opt-in, default: false) ---
-      # Quando true, exige TODAS as credenciais Google/GitHub + JWT_SECRET
-      # abaixo (falha no startup se faltar alguma). Defina os segredos em um
-      # .env na raiz do repo (ja esta no .gitignore) para preencher os
-      # ${...} abaixo, ou exporte-os no ambiente antes do "docker compose up".
-      - AUTH_ENABLED=false
-      # - GOOGLE_CLIENT_ID=
+      # --- Login social: Google e GitHub sao opt-in separadamente ---
+      # Cada flag so exige as credenciais do proprio provedor (falha no
+      # startup se faltar alguma exigida). Defina os segredos em um .env na
+      # raiz do repo (ja esta no .gitignore) para preencher os ${...} abaixo,
+      # ou exporte-os no ambiente antes do "docker compose up".
+      - GOOGLE_AUTH_ENABLED=false
+      # - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       # - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       # - GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
-      # - GITHUB_CLIENT_ID=
+      - GITHUB_AUTH_ENABLED=false
+      # - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
       # - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       # - GITHUB_REDIRECT_URI=http://localhost:8000/auth/github/callback
+      # Necessario se GOOGLE_AUTH_ENABLED=true ou GITHUB_AUTH_ENABLED=true
       # - JWT_SECRET=${JWT_SECRET}
       # - JWT_ALGORITHM=HS256
       # - JWT_EXPIRES_MINUTES=10080
       # - OAUTH_STATE_TTL_SECONDS=600
 
-      # --- Cobranca via Stripe (opt-in, default: false, exige AUTH_ENABLED=true) ---
+      # --- Cobranca via Stripe (opt-in, default: false, exige login social habilitado) ---
       - PAYMENT_ENABLED=false
       # - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
       # - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
