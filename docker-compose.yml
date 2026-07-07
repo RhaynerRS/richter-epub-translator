@@ -27,6 +27,37 @@ services:
       - TOKEN_ENCODING=cl100k_base
       - STORAGE_DIR=/data
       - JOB_WORKERS=4
+
+      # --- CORS (opcional) ---
+      # Origem do frontend liberada para chamar a API do navegador. Sem isso,
+      # nenhuma origem cross-origin e liberada.
+      # - FRONTEND_ORIGIN=http://localhost:5173
+
+      # --- Login social (opt-in, default: false) ---
+      # Quando true, exige TODAS as credenciais Google/GitHub + JWT_SECRET
+      # abaixo (falha no startup se faltar alguma). Defina os segredos em um
+      # .env na raiz do repo (ja esta no .gitignore) para preencher os
+      # ${...} abaixo, ou exporte-os no ambiente antes do "docker compose up".
+      - AUTH_ENABLED=false
+      # - GOOGLE_CLIENT_ID=
+      # - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      # - GOOGLE_REDIRECT_URI=http://localhost:8000/auth/google/callback
+      # - GITHUB_CLIENT_ID=
+      # - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
+      # - GITHUB_REDIRECT_URI=http://localhost:8000/auth/github/callback
+      # - JWT_SECRET=${JWT_SECRET}
+      # - JWT_ALGORITHM=HS256
+      # - JWT_EXPIRES_MINUTES=10080
+      # - OAUTH_STATE_TTL_SECONDS=600
+
+      # --- Cobranca via Stripe (opt-in, default: false, exige AUTH_ENABLED=true) ---
+      - PAYMENT_ENABLED=false
+      # - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      # - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      # - STRIPE_CURRENCY=usd
+      # - PRICE_PER_1K_TOKENS_CENTS=50
+      # - MIN_CHARGE_CENTS=50
+      # - PUBLIC_BASE_URL=http://localhost:8000
     labels:
       - "service_name=lexicast-api"
     restart: unless-stopped
