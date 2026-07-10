@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="./assets/icon.svg" width="100" alt="Lexicast" />
-  <h1>Lexicast</h1>
+  <img src="./assets/icon.svg" width="100" alt="Folium" />
+  <h1>Folium</h1>
   <p><strong>Self-hosted EPUB translation, powered by a local LLM</strong></p>
   <p>
     A tiny FastAPI wrapper around <a href="https://github.com/oomol-lab/epub-translator">epub-translator</a><br/>
@@ -47,7 +47,7 @@ uvicorn app.main:app --reload
 ### Running the desktop client
 
 ```bash
-cd LexicastUi
+cd FoliumUi
 dotnet run
 ```
 
@@ -56,11 +56,11 @@ Point the app at the API URL (default `http://localhost:8000`) on the upload scr
 ## Building
 
 ```bash
-docker build -f folium-api/dockerfile -t lexicast-api .
+docker build -f folium-api/dockerfile -t Folium-api .
 ```
 
 ```bash
-dotnet build LexicastUi/LexicastUi.csproj
+dotnet build FoliumUi/FoliumUi.csproj
 ```
 
 ## Architecture
@@ -74,7 +74,7 @@ dotnet build LexicastUi/LexicastUi.csproj
 | Component | Type | Responsibility |
 |-----------|------|----------------|
 | `folium-api` | FastAPI service | Accepts EPUB uploads, runs `epub-translator` jobs against Ollama, exposes progress + download |
-| `LexicastUi` | Avalonia desktop app (.NET 10) | Pick an `.epub`, configure target language/prompt, track progress, download the translated file — runs on Windows, Linux and macOS |
+| `FoliumUi` | Avalonia desktop app (.NET 10) | Pick an `.epub`, configure target language/prompt, track progress, download the translated file — runs on Windows, Linux and macOS |
 | `ollama` | Ollama container | Serves the local LLM (Qwen3 by default) via an OpenAI-compatible endpoint |
 
 Translation jobs run in-process on a thread pool (`JOB_WORKERS`) inside the API container — there's no external queue. Job state (status, progress, last warning) is kept in memory and polled/streamed by the client.
